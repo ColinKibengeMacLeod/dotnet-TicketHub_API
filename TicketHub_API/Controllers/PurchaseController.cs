@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Azure.Storage.Queues;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using TicketHubAPI;
 namespace TicketHub_API.Controllers
@@ -11,10 +12,10 @@ namespace TicketHub_API.Controllers
         private readonly ILogger<PurchaseController> _logger;
         private readonly IConfiguration _configuration;
 
-        //Constructor
-        public PurchaseController(ILogger<PurchaseController> logger)
+        // Constructor
+        public PurchaseController(IConfiguration configuration)
         {
-            _logger = logger;
+            _configuration = configuration;
         }
 
         [HttpGet]
@@ -24,11 +25,37 @@ namespace TicketHub_API.Controllers
         }
 
         [HttpPost]
-        public IActionResult Post(Purchase purchase)
+        public async Task<IActionResult> Post(Purchase purchase)
         {
 
-            //Validation - Return message listing all validation errors if multiple exist
-            return Ok("Hello from Purchase Controller - POST");
+            if (ModelState.IsValid == false) {
+                
+                return BadRequest(ModelState);
+            
+            }
+
+            string queueName = "tickethubqueue";
+
+            // Get connection string from secrets.json
+            string? connectionString = _configuration["AzureStorageConnectionString"];
+
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                return BadRequest("An error was encountered");
+            }
+
+            QueueClient queueClient = new QueueClient(connectionString, queueName);
+
+            //Serialize OBJ to JSON
+
+            string message = System.Text.Json.JsonSerializer.Serialize(purchase);
+
+            //Send message to queue
+
+            await queueClient.SendMessageAsync(message);
+
+            return Ok("Message successfully posted to queue!");
+
         }
     }
 }
