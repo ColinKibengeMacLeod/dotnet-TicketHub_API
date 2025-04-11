@@ -26,6 +26,8 @@ namespace TicketHub_API.Controllers
         [HttpPost]
         public IActionResult Post(Purchase purchase)
         {
+
+            //Validation - Return message listing all validation errors if multiple exist
             return Ok("Hello from Purchase Controller - POST");
         }
     }
